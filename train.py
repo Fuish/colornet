@@ -156,7 +156,10 @@ def yuv2rgb(yuv):
 with open("vgg/tensorflow-vgg16/vgg16-20160129.tfmodel", mode='rb') as f:
     fileContent = f.read()
 
-graph_def = tf.GraphDef()
+# Create a session for running operations in the Graph.
+sess = tf.Session()
+
+graph_def = sess.Graph()
 graph_def.ParseFromString(fileContent)
 
 with tf.variable_scope('colornet'):
@@ -218,7 +221,7 @@ elif uv == 2:
 else:
     loss = (tf.split(3, 2, loss)[0] + tf.split(3, 2, loss)[1]) / 2
 
-if phase_train:
+if phase_train is not None:
     optimizer = tf.train.GradientDescentOptimizer(0.0001)
     opt = optimizer.minimize(
         loss, global_step=global_step, gate_gradients=optimizer.GATE_NONE)
@@ -241,9 +244,6 @@ saver = tf.train.Saver()
 # Create the graph, etc.
 init_op = tf.initialize_all_variables()
 
-# Create a session for running operations in the Graph.
-sess = tf.Session()
-
 # Initialize the variables.
 sess.run(init_op)
 
@@ -265,10 +265,10 @@ try:
         if step % 1 == 0:
             pred_, pred_rgb_, colorimage_, grayscale_rgb_, cost, merged_ = sess.run(
                 [pred, pred_rgb, colorimage, grayscale_rgb, loss, merged], feed_dict={phase_train: False, uv: 3})
-            print {
-                "step": step,
-                "cost": np.mean(cost)
-            }
+            print (
+                "step", step,
+                "cost", np.mean(cost)
+            )
             if step % 1000 == 0:
                 summary_image = concat_images(grayscale_rgb_[0], pred_rgb_[0])
                 summary_image = concat_images(summary_image, colorimage_[0])
